@@ -43,7 +43,7 @@ def init_db():
     cursor.execute('''
         CREATE VIRTUAL TABLE IF NOT EXISTS photo_embeddings USING vec0(
             photo_id TEXT PRIMARY KEY,
-            description_embedding float[768]
+            description_embedding float[3072]
         )
     ''')
     conn.commit()

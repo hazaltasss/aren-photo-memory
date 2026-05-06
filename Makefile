@@ -1,4 +1,4 @@
-.PHONY: install run-backend run-frontend dev clean
+.PHONY: install run-backend run-frontend stop-backend stop-frontend stop dev clean
 
 # Install all dependencies
 install:
@@ -17,11 +17,25 @@ run-frontend:
 	@echo "Starting frontend..."
 	cd frontend && npm run dev
 
-# Run both (using & to run in parallel in the same terminal, use Ctrl+C to stop)
+# Stop backend (Port 8000)
+stop-backend:
+	@echo "Stopping backend..."
+	-lsof -ti:8000 | xargs kill -9 2>/dev/null || true
+
+# Stop frontend (Port 5173 and 5174)
+stop-frontend:
+	@echo "Stopping frontend..."
+	-lsof -ti:5173 | xargs kill -9 2>/dev/null || true
+	-lsof -ti:5174 | xargs kill -9 2>/dev/null || true
+
+# Stop everything
+stop: stop-backend stop-frontend
+	@echo "All services stopped."
+
+# Run both in background
 dev:
 	@echo "Starting both backend and frontend..."
-	(cd backend && . venv/bin/activate && uvicorn app.main:app --reload) & \
-	(cd frontend && npm run dev)
+	make run-backend & make run-frontend
 
 # Clean up temporary files
 clean:
