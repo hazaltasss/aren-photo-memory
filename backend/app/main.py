@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.database import init_db
 import os
 from app.config import settings
-from app.routers import photos
+from app.routers import photos, search
 
 app = FastAPI(title="Aren Photo Memory API")
 
@@ -25,3 +25,4 @@ def health_check():
     return {"status": "ok"}
 
 app.include_router(photos.router)
+app.include_router(search.router)
