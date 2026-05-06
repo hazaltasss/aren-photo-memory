@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+pydantic
+pydantic-settings
+google-genai
+python-multipart
+sqlite-vec
