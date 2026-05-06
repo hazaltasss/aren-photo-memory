@@ -35,7 +35,7 @@ def analyze_photo(image_path: str) -> PhotoAnalysisResult:
     """
     
     response = client.models.generate_content(
-        model='gemini-2.0-flash',
+        model=settings.GEMINI_MODEL,
         contents=[uploaded_file, prompt],
         config=types.GenerateContentConfig(
             response_mime_type="application/json",
@@ -47,7 +47,7 @@ def analyze_photo(image_path: str) -> PhotoAnalysisResult:
 
 def generate_embedding(text: str) -> list[float]:
     response = client.models.embed_content(
-        model='text-embedding-004',
+        model=settings.EMBEDDING_MODEL,
         contents=text
     )
     return response.embeddings[0].values
