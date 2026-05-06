@@ -13,24 +13,26 @@ def analyze_photo(image_path: str) -> PhotoAnalysisResult:
     prompt = """
     Analyze this photo of a 2-year-old toddler named Aren. 
     Extract the following structured information and provide a detailed description.
+    IMPORTANT: ALL text fields and categorical values MUST be in TURKISH.
+    
     Return strictly a JSON object matching this schema:
     {
-      "emotion": "happy/sad/surprised/neutral/angry/excited/sleepy",
+      "emotion": "mutlu/üzgün/şaşkın/nötr/kızgın/heyecanlı/uykulu",
       "is_smiling": boolean,
       "is_crying": boolean,
-      "activity": "short string describing activity",
-      "location_type": "indoor/outdoor",
-      "location_detail": "short string (e.g., park, house, beach)",
+      "activity": "aktiviteyi tanımlayan kısa metin",
+      "location_type": "iç mekan/dış mekan",
+      "location_detail": "kısa metin (örn: park, ev, plaj)",
       "people_count": integer,
       "has_other_people": boolean,
-      "clothing_description": "short string",
-      "hair_length": "short/medium/long",
+      "clothing_description": "kısa kıyafet tanımı",
+      "hair_length": "kısa/orta/uzun",
       "is_funny": boolean,
       "funniness_score": integer 1-10,
       "cuteness_score": integer 1-10,
-      "objects": ["array", "of", "strings"],
-      "season_guess": "spring/summer/fall/winter",
-      "description": "Detailed natural language description of the photo."
+      "objects": ["nesne", "listesi"],
+      "season_guess": "ilkbahar/yaz/sonbahar/kış",
+      "description": "Fotoğrafın detaylı doğal dildeki Türkçe açıklaması."
     }
     """
     
