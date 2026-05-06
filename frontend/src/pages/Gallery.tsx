@@ -91,10 +91,15 @@ export default function Gallery() {
                   alt="Memory" 
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
                 />
-                <div className="absolute top-4 left-4">
+                <div className="absolute top-4 left-4 flex flex-col gap-1.5">
                    <span className="bg-white/90 backdrop-blur-md text-slate-800 text-xs px-3 py-1.5 rounded-full font-bold shadow-sm uppercase tracking-wider">
                     {p.emotion}
                   </span>
+                  {p.relevance !== undefined && (
+                    <span className="bg-emerald-500/90 backdrop-blur-md text-white text-xs px-3 py-1.5 rounded-full font-bold shadow-sm">
+                      %{p.relevance} eşleşme
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="p-6">

@@ -6,7 +6,8 @@ class Settings(BaseSettings):
     EMBEDDING_MODEL: str
     DATABASE_URL: str
     UPLOAD_DIR: str
-    SEARCH_THRESHOLD: float
+    SEARCH_GAP: float
+    SEARCH_LIMIT: int
 
     class Config:
         env_file = ".env"

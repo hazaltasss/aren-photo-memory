@@ -7,6 +7,7 @@ export interface Photo {
   emotion: string;
   is_smiling: boolean;
   uploaded_at: string;
+  relevance?: number;
 }
 
 export const api = createApi({

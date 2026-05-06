@@ -25,3 +25,4 @@ class PhotoResponse(PhotoAnalysisResult):
     uploaded_at: str
     photo_date: Optional[str] = None
     notes: Optional[str] = None
+    relevance: Optional[int] = None  # 0-100, only present in search results
