@@ -22,18 +22,17 @@ def search_photos(req: SearchRequest):
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Semantic search using sqlite-vec with threshold
+        # Semantic search using sqlite-vec with subquery for threshold
         cursor.execute('''
-            WITH matches AS (
+            SELECT p.*, m.distance
+            FROM (
                 SELECT photo_id, vec_distance_cosine(description_embedding, ?) as distance
                 FROM photo_embeddings
-                WHERE distance < ?
-                ORDER BY distance ASC
-                LIMIT ?
-            )
-            SELECT p.*, m.distance
-            FROM matches m
+            ) m
             JOIN photos p ON m.photo_id = p.id
+            WHERE m.distance < ?
+            ORDER BY m.distance ASC
+            LIMIT ?
         ''', (embedding_bytes, settings.SEARCH_THRESHOLD, req.limit))
         
         rows = cursor.fetchall()
