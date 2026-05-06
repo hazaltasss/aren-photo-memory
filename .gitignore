@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+.env
+aren.db
+
+# Node
+node_modules/
+dist/
+.DS_Store
+
+# Local uploads
+backend/uploads/
