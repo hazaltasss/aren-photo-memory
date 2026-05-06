@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
-import { useGetPhotosQuery, useSearchPhotosMutation, useUploadPhotoMutation, Photo } from '../api/client';
+import { useGetPhotosQuery, useSearchPhotosMutation, useUploadPhotoMutation } from '../api/client';
+import type { Photo } from '../api/client';
 
 export default function Gallery() {
   const { data: allPhotos = [], isLoading: loadingPhotos } = useGetPhotosQuery();
