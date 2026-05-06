@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from app.services.gemini import generate_embedding
 from app.database import get_db_connection
 from app.schemas import PhotoResponse
+from app.config import settings
 import json
 
 router = APIRouter(prefix="/api/search", tags=["Search"])
@@ -21,14 +22,19 @@ def search_photos(req: SearchRequest):
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Semantic search using sqlite-vec
+        # Semantic search using sqlite-vec with threshold
         cursor.execute('''
-            SELECT p.*, vec_distance_cosine(e.description_embedding, ?) as distance
-            FROM photo_embeddings e
-            JOIN photos p ON e.photo_id = p.id
-            ORDER BY distance ASC
-            LIMIT ?
-        ''', (embedding_bytes, req.limit))
+            WITH matches AS (
+                SELECT photo_id, vec_distance_cosine(description_embedding, ?) as distance
+                FROM photo_embeddings
+                WHERE distance < ?
+                ORDER BY distance ASC
+                LIMIT ?
+            )
+            SELECT p.*, m.distance
+            FROM matches m
+            JOIN photos p ON m.photo_id = p.id
+        ''', (embedding_bytes, settings.SEARCH_THRESHOLD, req.limit))
         
         rows = cursor.fetchall()
         conn.close()
