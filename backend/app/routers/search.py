@@ -1,65 +1,52 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from app.services.gemini import generate_embedding
-from app.database import get_db_connection
 from app.schemas import PhotoResponse
+from app.services.search_service import perform_search
 from app.config import settings
+from typing import List, Optional
 import json
-import struct
 
 router = APIRouter(prefix="/api/search", tags=["Search"])
 
+class SearchFilters(BaseModel):
+    emotions: Optional[List[str]] = None
+    location_types: Optional[List[str]] = None
+    objects: Optional[List[str]] = None
+    detected_people: Optional[List[str]] = None
+    hair_length: Optional[str] = None
+
 class SearchRequest(BaseModel):
-    query: str
+    query: Optional[str] = None
+    filters: Optional[SearchFilters] = None
 
 @router.post("", response_model=list[PhotoResponse])
 def search_photos(req: SearchRequest):
     try:
-        query_embedding = generate_embedding(req.query)
-        embedding_bytes = struct.pack(f'{len(query_embedding)}f', *query_embedding)
-
-        conn = get_db_connection()
-        cursor = conn.cursor()
-
-        # Fetch top-N results ordered by distance, no WHERE filter
-        cursor.execute('''
-            SELECT p.*, m.distance
-            FROM (
-                SELECT photo_id, vec_distance_cosine(description_embedding, ?) as distance
-                FROM photo_embeddings
-                ORDER BY distance ASC
-                LIMIT ?
-            ) m
-            JOIN photos p ON m.photo_id = p.id
-        ''', (embedding_bytes, settings.SEARCH_LIMIT))
-
-        rows = cursor.fetchall()
-        conn.close()
-
-        if not rows:
-            return []
-
-        # Apply gap filter in Python: drop anything beyond best_distance + SEARCH_GAP
-        best_distance = rows[0]['distance']
-        cutoff = best_distance + settings.SEARCH_GAP
-
+        filters_dict = req.filters.dict(exclude_none=True) if req.filters else {}
+        rows = perform_search(query=req.query, filters=filters_dict, limit=settings.SEARCH_LIMIT)
+        
         results = []
+        best_distance = rows[0]['distance'] if rows and rows[0]['distance'] is not None else None
+        
         for row in rows:
             d = dict(row)
             distance = d.pop('distance')
-
-            if distance > cutoff:
-                break  # Results are ordered, so we can stop early
+            
+            if distance is not None and best_distance is not None:
+                if distance > best_distance + settings.SEARCH_GAP:
+                    break
+                d['relevance'] = max(0, int((1 - distance) * 100))
+            else:
+                d['relevance'] = None
 
             d['is_smiling'] = bool(d['is_smiling'])
             d['is_crying'] = bool(d['is_crying'])
             d['has_other_people'] = bool(d['has_other_people'])
             d['is_funny'] = bool(d['is_funny'])
             d['objects'] = json.loads(d['objects']) if d['objects'] else []
-            d['relevance'] = max(0, int((1 - distance) * 100))
+            d['detected_people'] = json.loads(d['detected_people']) if d.get('detected_people') else []
             results.append(PhotoResponse(**d))
 
         return results
-
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -1,9 +1,9 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.responses import FileResponse
-from app.services.gemini import analyze_photo, generate_embedding
 from app.database import get_db_connection
 from app.config import settings
 from app.schemas import PhotoResponse
+from app.services.photo_service import process_and_save_photo
 import uuid
 import os
 from datetime import datetime
@@ -19,60 +19,15 @@ async def upload_photo(file: UploadFile = File(...)):
     filename = f"{photo_id}{file_ext}"
     file_path = os.path.join(settings.UPLOAD_DIR, filename)
     
-    # Save file locally
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-        
     try:
-        # Analyze with Gemini
-        analysis = analyze_photo(file_path)
-        
-        # Generate embedding for the description
-        embedding = generate_embedding(analysis.description)
-        
-        # Save to SQLite
-        file_url = f"/api/photos/image/{filename}"
-        now = datetime.utcnow().isoformat()
-        
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        
-        cursor.execute('''
-            INSERT INTO photos (
-                id, file_url, uploaded_at, emotion, is_smiling, is_crying,
-                activity, location_type, location_detail, people_count,
-                has_other_people, clothing_description, hair_length,
-                is_funny, funniness_score, cuteness_score, objects,
-                season_guess, description
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            photo_id, file_url, now, analysis.emotion, 1 if analysis.is_smiling else 0,
-            1 if analysis.is_crying else 0, analysis.activity, analysis.location_type,
-            analysis.location_detail, analysis.people_count, 
-            1 if analysis.has_other_people else 0, analysis.clothing_description,
-            analysis.hair_length, 1 if analysis.is_funny else 0, 
-            analysis.funniness_score, analysis.cuteness_score,
-            json.dumps(analysis.objects), analysis.season_guess, analysis.description
-        ))
-        
-        import struct
-        embedding_bytes = struct.pack(f'{len(embedding)}f', *embedding)
-        cursor.execute('''
-            INSERT INTO photo_embeddings (photo_id, description_embedding)
-            VALUES (?, ?)
-        ''', (photo_id, embedding_bytes))
-        
-        conn.commit()
-        conn.close()
-        
-        return PhotoResponse(
-            id=photo_id,
-            file_url=file_url,
-            uploaded_at=now,
-            **analysis.model_dump()
-        )
+        # Save file locally
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+            
+        return process_and_save_photo(file_path, file.filename)
     except Exception as e:
-        os.remove(file_path)
+        if os.path.exists(file_path):
+            os.remove(file_path)
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/image/{filename}")
@@ -98,5 +53,31 @@ def list_photos():
         d['has_other_people'] = bool(d['has_other_people'])
         d['is_funny'] = bool(d['is_funny'])
         d['objects'] = json.loads(d['objects']) if d['objects'] else []
+        d['detected_people'] = json.loads(d['detected_people']) if d['detected_people'] else []
         results.append(PhotoResponse(**d))
     return results
+
+@router.delete("/{photo_id}", status_code=204)
+def delete_photo(photo_id: str):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT file_url FROM photos WHERE id = ?", (photo_id,))
+    row = cursor.fetchone()
+    if not row:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Photo not found")
+        
+    file_url = row['file_url']
+    filename = file_url.split('/')[-1]
+    file_path = os.path.join(settings.UPLOAD_DIR, filename)
+    
+    cursor.execute("DELETE FROM photo_embeddings WHERE photo_id = ?", (photo_id,))
+    cursor.execute("DELETE FROM photos WHERE id = ?", (photo_id,))
+    conn.commit()
+    conn.close()
+    
+    if os.path.exists(file_path):
+        os.remove(file_path)
+        
+    return None

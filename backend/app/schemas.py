@@ -10,6 +10,7 @@ class PhotoAnalysisResult(BaseModel):
     location_detail: str
     people_count: int
     has_other_people: bool
+    detected_people: List[str]
     clothing_description: str
     hair_length: str
     is_funny: bool

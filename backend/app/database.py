@@ -36,6 +36,7 @@ def init_db():
             season_guess TEXT,
             description TEXT,
             uploaded_at TEXT,
+            detected_people TEXT, -- JSON string
             notes TEXT
         )
     ''')
@@ -46,5 +47,12 @@ def init_db():
             description_embedding float[3072]
         )
     ''')
+    
+    # Migration for existing database
+    try:
+        cursor.execute("ALTER TABLE photos ADD COLUMN detected_people TEXT")
+    except sqlite3.OperationalError:
+        pass # Column already exists
+        
     conn.commit()
     conn.close()
