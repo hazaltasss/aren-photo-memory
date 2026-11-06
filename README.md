@@ -1,4 +1,4 @@
-# Aren — AI-Powered Multimodal Photo Memory Assistant 📸🧠
+# Aren — Autonomous Multimodal AI Photo Memory Assistant 📸🧠
 
 [![Python](https://img.shields.io/badge/Python-3.12-blue.svg)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg)](https://fastapi.tiangolo.com)
@@ -7,109 +7,111 @@
 [![SQLite](https://img.shields.io/badge/SQLite-sqlite--vec-003B57.svg)](https://github.com/asg017/sqlite-vec)
 [![Twilio](https://img.shields.io/badge/Twilio-WhatsApp%20API-F22F46.svg)](https://www.twilio.com)
 
-**Aren**, 2 yaşındaki bir çocuğun fotoğraf arşivini hem modern bir web arayüzü hem de **WhatsApp** üzerinden otonom olarak yöneten, multimodal yapay zeka (Vision & Embeddings) ve yerel vektör veritabanı (`sqlite-vec`) ile güçlendirilmiş akıllı bir anı asistanıdır.
+**Aren** is an end-to-end, production-grade photo memory assistant designed to capture, analyze, and query family memories using multimodal AI (**Google Gemini Vision & Embeddings**) and a lightweight local vector database (**`sqlite-vec`**). The system features dual interaction surfaces: a glassmorphism **React web dashboard** and an autonomous **WhatsApp bot** powered by Twilio webhooks.
 
 ---
 
-## 🌟 Öne Çıkan Özellikler
+## 🌟 Key Features
 
-- **🤖 Multimodal AI Fotoğraf Analizi:** Yüklenen her fotoğraf Google Gemini 2.5 Flash ile taranır; baskın duygu durumu, gülümseme/ağlama durumu, mekan/aktivite detayları, kıyafet açıklamaları ve komiklik/sevimlilik skorları yapısal JSON olarak çıkarılır.
-- **📱 WhatsApp Otonom Anı Asistanı (Twilio Webhook):**
-  - **Medya Alımı (Auto-Ingestion):** WhatsApp'tan fotoğraf veya video gönderildiğinde arka planda otomatik indirilir, AI ile etiketlenir ve arşive kaydedilir.
-  - **Doğal Dil ile Arama:** Kullanıcı WhatsApp'tan *"Aren'in parkta çok güldüğü bir anı getir"* yazdığında anında ilgili fotoğraf ve anı özeti WhatsApp medyası olarak yanıtlanır.
-- **🔎 Hibrit Arama Motoru (Hybrid Search):** Doğal dil sorguları LLM tarafından **Kesin SQL Filtreleri (Hard Filters)** ve **Anlamsal Arama (Semantic Vector Search)** olarak ayrıştırılır.
-- **📐 3072-Boyutlu Vektör Benzerliği:** Gemini Embedding 2 modeli ile üretilen vektörler, SQLite içinde `sqlite-vec` ile yerel ve ultra hafif Kosinüs Benzerliği (Cosine Similarity) ile taranır.
-- **🎨 Glassmorphism Web Deneyimi:** React, Vite, TypeScript ve Tailwind CSS ile geliştirilmiş modern, responsive ve duygu/mekan bazlı filtreleme sunan web galerisi.
+- **🤖 Multimodal AI Vision Analysis:** Every uploaded photo is automatically parsed by Gemini 2.5 Flash to extract structured JSON metadata: dominant emotions, smiling/crying states, location context, activities, apparel descriptions, and funniness/cuteness scores.
+- **📱 WhatsApp Ingestion & Natural Language Retrieval:**
+  - **Automated Media Ingestion:** Receiving photos or videos via WhatsApp triggers automatic download, AI labeling, vector embedding, and storage.
+  - **Conversational Memory Search:** Users can text queries like *"Send me photos of Aren laughing at the park"*, and the bot retrieves the best match and sends it back with contextual AI commentary directly on WhatsApp.
+- **🔎 Hybrid Query Engine (SQL Filters + Vector Search):** Employs an LLM query-intent parser that separates natural language into strict SQL filters (e.g., `emotion = "happy"`) and clean semantic descriptions for vector similarity.
+- **📐 3072-Dimensional Dense Vector Search:** Uses `gemini-embedding-2` and `sqlite-vec` to run sub-millisecond local cosine similarity searches without the operational overhead of heavy external vector databases.
+- **🎨 Modern Glassmorphism Web Interface:** Built with React 18, Vite, TypeScript, and Tailwind CSS, offering real-time filtering, instant search debouncing, and memory inspection modals.
 
 ---
 
-## 🏗️ Sistem Mimarisi
+## 🏗️ System Architecture
 
 ```mermaid
 flowchart TD
-    subgraph Clients["İstemciler"]
-        WebUI["Web Frontend (React + Vite)"]
-        WhatsApp["WhatsApp Kullanıcısı"]
+    subgraph Clients["Clients & Interfaces"]
+        WebUI["Web Frontend (React + Vite + TypeScript)"]
+        WhatsApp["WhatsApp User"]
     end
 
-    subgraph Gateway["İletişim & Ağ Katmanı"]
+    subgraph Gateway["API & Communication Layer"]
         Twilio["Twilio WhatsApp Webhook"]
         FastAPI["FastAPI Backend (Python 3.12)"]
     end
 
-    subgraph AI["Yapay Zeka Servisleri (Google Gemini)"]
+    subgraph AI["AI Services (Google Gemini)"]
         Vision["Gemini 2.5 Flash (Vision Analysis)"]
         Embedding["Gemini Embedding 2 (3072-dim Vectors)"]
         QueryParser["Gemini Query Intent Parser"]
     end
 
-    subgraph Storage["Veri & Dosya Depolama"]
-        LocalDisk["/uploads (Fotoğraf Depolama)"]
-        SQLiteVec["SQLite + sqlite-vec (Metadata & Vektör İndeksi)"]
+    subgraph Storage["Data & File Persistence"]
+        LocalDisk["/uploads (Media Storage)"]
+        SQLiteVec["SQLite + sqlite-vec (Metadata & Vector Index)"]
     end
 
     WebUI <-->|REST API| FastAPI
-    WhatsApp <-->|Mesaj / Medya| Twilio
+    WhatsApp <-->|Inbound Messages & Media| Twilio
     Twilio <-->|Webhook POST| FastAPI
 
-    FastAPI -->|Fotoğraf Analizi| Vision
-    FastAPI -->|Metin Vektörleştirme| Embedding
-    FastAPI -->|Arama Niyeti Ayrıştırma| QueryParser
+    FastAPI -->|Multimodal Image Analysis| Vision
+    FastAPI -->|Semantic Vector Generation| Embedding
+    FastAPI -->|Natural Language Parsing| QueryParser
 
-    FastAPI -->|Dosya Kaydı| LocalDisk
-    FastAPI <-->|SQL + Cosine Search| SQLiteVec
+    FastAPI -->|Persist Image Files| LocalDisk
+    FastAPI <-->|Hybrid SQL + Cosine Search| SQLiteVec
 ```
 
 ---
 
-## 💡 Çözülen Gerçek Mühendislik Problemleri
+## 💡 Engineering Challenges & Technical Highlights
 
-### 1. WhatsApp Webhook Zaman Aşımı & Asenkron İşlem (Event-Loop Starvation)
-* **Problem:** Twilio webhook'ları 15 saniye içinde HTTP yanıtı bekler. Ağır yapay zeka analizleri ve medya indirme işlemleri FastAPI'nin asenkron event-loop'unu kilitlediğinde bağlantı kopuyordu.
-* **Çözüm:** Medya işleme akışı `fastapi.concurrency.run_in_threadpool` kullanılarak iş parçacığı havuzuna (threadpool) devredildi. Bu sayede sunucu eşzamanlı gelen çoklu isteklerde bloke olmadan non-blocking çalışır.
+### 1. Webhook Concurrency & Event-Loop Starvation
+* **Challenge:** Twilio webhooks enforce a strict 15-second response timeout. Running synchronous image processing and heavy network calls directly inside the asynchronous route handlers caused event-loop blocking, leading to 504 Gateway Timeouts during multi-photo uploads.
+* **Solution:** Decoupled media ingestion using `fastapi.concurrency.run_in_threadpool`. Heavy I/O and AI calls are offloaded to an asynchronous worker thread pool, ensuring non-blocking execution and sub-second webhook acknowledgment.
 
-### 2. Anlamsal Çakışma ve Yanılsama Önleme (Semantic Bleed Mitigation)
-* **Problem:** Kullanıcı *"Aren'in güldüğü anlar"* aradığında, saf vektör araması arka planda gülen diğer kişilerin fotoğraflarını da Aren sanarak yüksek benzerlik skoruyla getiriyordu.
-* **Çözüm:** Sorgu ayrıştırıcı (Query Parser) geliştirildi. Cümledeki duygu ifadeleri (örn: `güldüğü` -> `emotion=mutlu`) kesin SQL filtrelerine aktarıldı ve vektör sorgusundan temizlendi. Böylece vektör arama sadece mekan/nesneye odaklanırken, duygu SQL düzeyinde garanti altına alındı.
+### 2. Mitigating Semantic Bleed & Hallucinations
+* **Challenge:** When searching for *"Aren laughing"*, a pure vector search often surfaced pictures where background individuals were laughing while Aren was neutral, due to the high semantic similarity of the concept "laughing".
+* **Solution:** Designed a hybrid query parsing pipeline. Natural language requests are first parsed by an LLM into:
+  1. **Strict Metadata Filters:** Categorical attributes (e.g., `emotions: ["happy"]`, `location_type: ["outdoor"]`).
+  2. **Sanitized Vector Query:** Emotional descriptors are stripped from the vector string, preventing query pollution and ensuring exact attribute compliance via SQL `WHERE` clauses combined with vector distance ranking.
 
-### 3. Dış API Hata Toleransı & Otomatik Yeniden Deneme (Exponential Retry)
-* **Problem:** Google Gemini API yüksek talep anlarında `503 Service Unavailable` veya `429 Rate Limit` hataları üretebiliyordu.
-* **Çözüm:** AI servis katmanına exponential backoff ile 3 aşamalı otomatik yeniden deneme (Retry Loop) ve hata durumunda diskte yetim (orphaned) dosya bırakmayan temizlik mekanizması entegre edildi.
+### 3. Fault-Tolerant External API Retries
+* **Challenge:** High traffic spikes on upstream Google Gemini endpoints occasionally resulted in `503 Service Unavailable` or `429 Rate Limit` responses.
+* **Solution:** Implemented an exponential backoff retry mechanism (up to 3 attempts with progressive delay) and transactional file management that purges orphaned image artifacts if analysis fails completely.
 
-### 4. Modele Bağımsız Adaptif Gap Filtreleme (Model-Agnostic Gap Filtering)
-* **Problem:** Sabit benzerlik eşikleri (threshold), farklı model veya veri dağılımlarında alakasız sonuçların listeye sızmasına yol açıyordu.
-* **Çözüm:** En yakın sonucun mesafesi ile diğer sonuçlar arasındaki farkı dinamik inceleyen **Adaptive Gap Filter** algoritması geliştirildi.
+### 4. Model-Agnostic Adaptive Gap Filtering
+* **Challenge:** Static distance thresholds fail when query distributions or embedding models shift, causing either false positives or missing relevant results.
+* **Solution:** Developed an adaptive gap filtering strategy that dynamically evaluates the distance delta between the top-ranked match and subsequent candidates, discarding sudden semantic drop-offs.
 
 ---
 
-## 🛠️ Teknoloji Yığını
+## 🛠️ Technology Stack
 
-| Katman | Teknoloji | Tercih Nedeni |
+| Layer | Technology | Rationale |
 |---|---|---|
-| **Backend** | Python 3.12, FastAPI, Uvicorn | Yüksek asenkron G/Ç performansı ve modern Python ekosistemi |
-| **Frontend** | React 18, TypeScript, Vite, Tailwind CSS | Tip güvenliği, bileşen modülerliği ve hızlı derleme |
-| **Multimodal Vision** | Google Gemini 2.5 Flash | Karmaşık duygusal ve bağlamsal sahneleri yapılandırılmış JSON olarak çıkarma |
-| **Embeddings** | `gemini-embedding-2` | 3072 boyutlu zengin anlamsal vektör uzayı |
-| **Vector Database** | SQLite + `sqlite-vec` | Harici ağır vektör DB sunucularına gerek duymayan hafif, yerel ve taşınabilir mimari |
-| **Messaging** | Twilio WhatsApp API | Güvenilir webhook ve zengin medya bildirim altyapısı |
+| **Backend** | Python 3.12, FastAPI, Uvicorn | High asynchronous I/O performance and native AI ecosystem compatibility |
+| **Frontend** | React 18, TypeScript, Vite, Tailwind CSS | Strong type safety, reusable component architecture, and rapid build times |
+| **Multimodal Vision** | Google Gemini 2.5 Flash | High-accuracy structured schema extraction from complex emotional scenes |
+| **Embeddings** | `gemini-embedding-2` | Rich 3072-dimensional semantic representation space |
+| **Vector Database** | SQLite + `sqlite-vec` | Zero-configuration, embedded, and lightning-fast local vector similarity indexing |
+| **Messaging Gateway** | Twilio WhatsApp API | Standardized webhook interface for cellular messaging and rich media delivery |
 
 ---
 
-## 🚀 Hızlı Başlangıç (Kurulum)
+## 🚀 Quickstart & Installation
 
-Projede tüm operasyonlar pratiklik için `Makefile` üzerinden yönetilmektedir.
+All development tasks are automated using the project's `Makefile`.
 
-### 1. Depoyu Klonlayın
+### 1. Clone the Repository
 ```bash
-git clone https://github.com/<kullanici-adiniz>/aren-photo-memory.git
+git clone https://github.com/hazaltasss/aren-photo-memory.git
 cd aren-photo-memory
 ```
 
-### 2. Ortam Değişkenlerini Tanımlayın
+### 2. Configure Environment Variables
 ```bash
 cp backend/.env.example backend/.env
 ```
-`backend/.env` dosyasını açıp kendi API anahtarlarınızı girin:
+Populate `backend/.env` with your API credentials:
 ```env
 GEMINI_API_KEY=your_gemini_api_key
 GEMINI_MODEL=gemini-2.5-flash
@@ -121,54 +123,54 @@ TWILIO_ACCOUNT_SID=your_twilio_sid
 TWILIO_AUTH_TOKEN=your_twilio_token
 ```
 
-### 3. Bağımlılıkları Yükleyin
+### 3. Install Dependencies
 ```bash
 make install
 ```
 
-### 4. Uygulamayı Başlatın
-Frontend ve Backend'i aynı anda ayağa kaldırmak için:
+### 4. Start the Application
+Run both backend and frontend servers simultaneously:
 ```bash
 make dev
 ```
 - **Web UI:** `http://localhost:5173`
-- **FastAPI Swagger Docs:** `http://localhost:8000/docs`
+- **FastAPI Interactive Docs:** `http://localhost:8000/docs`
 
 ---
 
-## 📂 Proje Dizin Yapısı
+## 📂 Project Structure
 
 ```text
 aren/
-├── Makefile                     # Tek komutla build/run yönetim otomasyonu
-├── README.md                    # Proje teknik dokümantasyonu
+├── Makefile                     # Build & run automation commands
+├── README.md                    # Project documentation & architecture showcase
 ├── backend/
 │   ├── app/
-│   │   ├── main.py              # FastAPI giriş noktası & middleware yapılandırması
-│   │   ├── config.py            # Pydantic BaseSettings ile tip güvenli konfigürasyon
-│   │   ├── database.py          # SQLite & sqlite-vec bağlantı ve şema yönetimi
-│   │   ├── schemas.py           # Pydantic DTO ve API validasyon modelleri
+│   │   ├── main.py              # FastAPI app initialization & CORS middleware
+│   │   ├── config.py            # Pydantic BaseSettings for type-safe environment configuration
+│   │   ├── database.py          # SQLite connection & sqlite-vec extension loader
+│   │   ├── schemas.py           # Pydantic DTOs & response schemas
 │   │   ├── routers/
-│   │   │   ├── photos.py        # Fotoğraf yükleme ve listeleme endpoint'leri
-│   │   │   ├── search.py        # Anlamsal arama ve filtreleme endpoint'leri
-│   │   │   ├── filters.py       # Dinamik filtre seçenekleri API'si
-│   │   │   └── whatsapp.py      # Twilio WhatsApp webhook & medya işleme motoru
+│   │   │   ├── photos.py        # Photo upload & gallery endpoints
+│   │   │   ├── search.py        # Semantic vector search & filtering endpoints
+│   │   │   ├── filters.py       # Dynamic filter option aggregation
+│   │   │   └── whatsapp.py      # Twilio WhatsApp webhook & media handler
 │   │   └── services/
-│   │       ├── gemini.py        # Gemini API istemcisi & retry mekanizması
-│   │       ├── photo_service.py # Fotoğraf işleme, vision analizi ve DB yazımı
-│   │       └── search_service.py# Hibrit arama, SQL filtreleme ve vektör benzerliği
+│   │       ├── gemini.py        # Gemini client wrapper with exponential retry logic
+│   │       ├── photo_service.py # Image ingestion, vision analysis, & vector storage
+│   │       └── search_service.py# Hybrid search execution & distance gap filtering
 │   └── requirements.txt
 ├── frontend/
 │   ├── src/
-│   │   ├── api/client.ts        # Axios tabanlı tip güvenli API istemcisi
-│   │   ├── components/          # Yeniden kullanılabilir UI bileşenleri
-│   │   └── pages/Gallery.tsx    # Anı galerisi ve arama arayüzü
+│   │   ├── api/client.ts        # RTK Query / Axios type-safe API client
+│   │   ├── components/          # Reusable UI & modal components
+│   │   └── pages/Gallery.tsx    # Memory gallery & interactive search interface
 │   ├── package.json
 │   └── vite.config.ts
-└── docs/                        # Mimari tasarım belgeleri ve karar kayıtları (ADR)
+└── docs/                        # Architecture Decision Records (ADRs) & specs
 ```
 
 ---
 
-## 📄 Lisans
-Bu proje kişisel araştırma ve portföy vitrini amacıyla geliştirilmiştir.
+## 📄 License
+This project is developed for personal research, educational purposes, and engineering portfolio presentation.
